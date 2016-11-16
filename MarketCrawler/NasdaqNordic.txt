@@ -1,0 +1,19 @@
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE128388&name=Ahlsell,AHSL
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE101&name=Ericsson,ERIC B
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE5095&name=Telia%20Company,Telia
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE285&name=SKF%20B,SKF B
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE4870&name=Fingerprint,FING B
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=CSE1595&name=Carlsberg%20A,CARL CARL A
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=CSE122544&name=DONG%20Energy,DENERG
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE32443&name=ICA%20Gruppen,ICA
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE3966&name=ABB%20Ltd,ABB
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=HEX24267&name=Fiskars%20Oyj,FIS1V
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=HEX24348&name=Sievi%20Capital,SCI1V
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=CSE3422&name=PARKEN%20Spor,PARKEN
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=CSE3399&name=Br%C3%B8ndby%20IF,BIF
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE40286&name=Bj%C3%B6rn%20Borg,BORG
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=HEX24334&name=QPR%20Softwar,QPR1V
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=HEX24373&name=Tecnotree%20Oyj,TEM1V
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=HEX94144&name=Endomines,ENDOM
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=SSE892&name=Bong,BONG
+http://www.nasdaqomxnordic.com/aktier/microsite?Instrument=CSE3358&name=SP%20Group,SPG
