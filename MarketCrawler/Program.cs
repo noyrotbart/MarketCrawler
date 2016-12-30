@@ -15,7 +15,9 @@ using System.Configuration;
 using Xignite.Sdk.Api;
 using Xignite.Sdk.Api.Models.XigniteGlobalHistorical;
 
-
+/// <summary>
+/// NOY ROTBART 
+/// </summary>
 namespace MarketCrawler
 {
     class InstrumentContext
