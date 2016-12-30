@@ -58,6 +58,7 @@ namespace MarketCrawler
     }
     class Program
     {
+        //adding a comment
         private static readonly string ConnectionStr = ConfigurationManager.ConnectionStrings["EuroSrv14Prod"].ConnectionString;
 
         public static string root = @"C:\Users\nr\Desktop\MarketCrawler\MarketCrawler\";
