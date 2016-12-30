@@ -6,27 +6,27 @@ using System.Net;
 using Newtonsoft.Json;
 using MongoDB.Driver;
 using System.Text.RegularExpressions;
-using MarketCrawler.IgniteInstrument;
 using HtmlAgilityPack;
 using OpenQA.Selenium.PhantomJS;
 using OpenQA.Selenium;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Configuration;
 using Xignite.Sdk.Api;
-using Xignite.Sdk.Api.Models.XigniteGlobalHistorical;
+using Xignite.Sdk.Api.Models.XigniteGlobalQuotes;
 
 
 namespace MarketCrawler
 {
-    class InstrumentContext
+    class MyInstrumentContext
     {
         private IMongoDatabase db;
-        public InstrumentContext()
+        public void InstrumentContext()
         {
             MongoClient client = new MongoClient();
             this.db = client.GetDatabase("clientlist");
             var collection = db.GetCollection<Instrument>("instrument");
-            var igniteCollection = db.GetCollection<IgniteRootObject>("igniteInstrument");
+            var mismatches = db.GetCollection<Instrument>("mismatches");
+            var igniteCollection = db.GetCollection<GlobalQuoteExtend>("igniteInstrument");
         }
         public IMongoCollection<Instrument> Instruments
         {
@@ -37,11 +37,20 @@ namespace MarketCrawler
             }
 
         }
-        public IMongoCollection<IgniteRootObject> igniteInstruments
+        public IMongoCollection<GlobalQuoteExtend> IgniteInstruments
         {
             get
             {
-                return db.GetCollection<IgniteRootObject>("igniteInstrument");
+                return db.GetCollection<GlobalQuoteExtend>("igniteInstrument");
+
+            }
+
+        }
+        public IMongoCollection<Instrument> mismatchInstruments
+        {
+            get
+            {
+                return db.GetCollection<Instrument>("mismatches");
 
             }
 
@@ -60,19 +69,12 @@ namespace MarketCrawler
             //AccessFiles.ReadData("EURONEXT.txt", StockName.EURONEXT);
             //AccessFiles.ReadData("Nasdaq.txt", StockName.Nasdaq);
 
-            Dictionary<string, object> pars = new Dictionary<string, object>();
-            pars["ExchName"] = "London";
-            pars["Sym"] = "NVA";
-
-            List<List<string>> pathsInput = Sproc.Execute(ConnectionStr, "[dbo].[CF_GetStockFromTickerAndExchange]", pars);
-           GlobalHistoricalQuote[] queryX =  AccessXIgnite.getXigniteData("XLON", "EZH", 100);
-
             while (true)
             {
+               // AccessEnglishWeb();
                 AccessEuroNext();
-                AccessNasdaqEurope();
-                // AccessNasdaq();
-                AccessEnglishWeb();
+                //AccessNasdaqEurope();
+               //  AccessNasdaq();
                 // wait five minutes
                 System.Threading.Thread.Sleep(5 * 60 * 1000);
                 }
@@ -88,10 +90,19 @@ namespace MarketCrawler
                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36";
                 client.UseDefaultCredentials = true;
                 HtmlDocument htmlDoc = new HtmlDocument();
-                htmlDoc.LoadHtml(client.DownloadString(path));
-                htmlDoc.Save(root + "websiteDump.txt");
-                HtmlNodeCollection currentData = htmlDoc.DocumentNode.SelectNodes(xquery);
-                return currentData.Cast<HtmlNode>().ToArray();
+                try
+                {
+                    htmlDoc.LoadHtml(client.DownloadString(path));
+                    htmlDoc.Save(root + "websiteDump.txt");
+                    HtmlNodeCollection currentData = htmlDoc.DocumentNode.SelectNodes(xquery);
+                    return currentData.Cast<HtmlNode>().ToArray();
+                }
+                catch
+                {
+                    Console.WriteLine("Didn't get to the server");
+                    return null;
+                }
+               
             }
 
         }
@@ -141,6 +152,11 @@ namespace MarketCrawler
         static void AccessEuroNext()
         {
             List<Target> stockList = AccessFiles.getList(StockName.EURONEXT);
+            foreach (var stock in stockList)
+            {
+                Console.WriteLine(stock.urlIdentifier);
+            }
+            GlobalQuote mytempQuery = AccessXIgnite.getXigniteData("XNAS", "a");
             using (PhantomJSDriver driver = new PhantomJSDriver(@"C:\phantomjs-2.1.1-windows\bin"))
             {
                 foreach (Target stock in stockList)
@@ -163,7 +179,6 @@ namespace MarketCrawler
 
                             myInstrument.Bid(driver.FindElementById("bidPricevalue").Text);
                             myInstrument.Ask(driver.FindElementById("askPricevalue").Text);
-
 
                             myInstrument.ticker = stock.shortIdentifier;
                             myInstrument.timestamp = System.DateTime.Now;
@@ -209,6 +224,12 @@ namespace MarketCrawler
                             myInstrument.PctChange("-" + m[3]);
                             myInstrument.Change("-" + m[0]);
                         }
+                        // New: Nasdaq started marking unchanged in a funny way
+                        else if (m[0].Contains("unch"))
+                        {
+                            myInstrument.PctChange(0);
+                             myInstrument.Change(0);
+                           }
 
                         else {
                             myInstrument.PctChange(m[3]);
@@ -227,7 +248,21 @@ namespace MarketCrawler
                         myInstrument.url = stock.urlIdentifier;
                     }
                     InstrumentContext ctx = new InstrumentContext();
-                    ctx.Instruments.InsertOne(myInstrument);
+
+                GlobalQuote mytempQuery = AccessXIgnite.getXigniteData("XNAS", myInstrument.ticker);
+                var serializedParent = JsonConvert.SerializeObject(mytempQuery);
+                GlobalQuoteExtend query = JsonConvert.DeserializeObject<GlobalQuoteExtend>(serializedParent);
+                query.DBtimestamp = myInstrument.timestamp;
+                ctx.IgniteInstruments.InsertOne(query);
+                var differences = myInstrument.compareInstrument(query);
+                ctx.Instruments.InsertOne(myInstrument);
+
+                if (differences.different == true)
+                {
+                    ctx.mismatchInstruments.InsertOne(differences);
+                }
+
+                ctx.Instruments.InsertOne(myInstrument);
                 }
 
         }
@@ -240,9 +275,13 @@ namespace MarketCrawler
                 foreach (Target item in londonStocks)
                 {
                     string xquery = ".//div[@class='commonTable table-responsive']/table//td";
-                    string path = queryPath + item.urlIdentifier + ".html";
-                    Console.WriteLine("Getting {0}", path);
+                string lastTradeTable = ".//table[@class='table_dati']//td";
+
+                string path = queryPath + item.urlIdentifier + ".html";
+                  //  Console.WriteLine("Getting {0}", path);
                     var myArray = GetTable(path, xquery);
+                     var lastTrades = GetTable(path, lastTradeTable);
+                       if (myArray == null) continue;
                     Instrument myInstrument = new Instrument();
                     {
                         string changes = myArray[3].InnerText.Replace("\r", string.Empty).Replace("\n", string.Empty).Replace(")", string.Empty).Replace("(", string.Empty);
@@ -262,12 +301,28 @@ namespace MarketCrawler
                         myInstrument.timestamp = System.DateTime.Now;
                         myInstrument.stockExchangeName = StockName.London;
                         myInstrument.url = path;
+                    // To present to the xignite team
+                    myInstrument.lastTradeTime = lastTrades[0].InnerText.Replace("\r\n", string.Empty).Replace(@"&nbsp", string.Empty);
+                        myInstrument.LastTradePrice(lastTrades[1].InnerText);
+
                     }
                     // accessing the mongoDB 
 
-                    ctx.Instruments.InsertOne(myInstrument);
-                    // In order to not get banned we delay individul request from the london website
-                    System.Threading.Thread.Sleep(1000);
+                // In order to not get banned we delay individul request from the london website
+                //Getting the data from Xignite
+                GlobalQuote tempQuery = AccessXIgnite.getXigniteData("XLON", item.shortIdentifier);
+                var serializedParent = JsonConvert.SerializeObject(tempQuery);
+                GlobalQuoteExtend query = JsonConvert.DeserializeObject<GlobalQuoteExtend>(serializedParent);
+                query.DBtimestamp = myInstrument.timestamp;
+                ctx.IgniteInstruments.InsertOne(query);
+               var differences = myInstrument.compareInstrument(query);
+                ctx.Instruments.InsertOne(myInstrument);
+
+                if (differences.different  == true)
+                {
+                    ctx.mismatchInstruments.InsertOne(differences);
+                }
+                    //System.Threading.Thread.Sleep(1000);
 
                 }
             }
