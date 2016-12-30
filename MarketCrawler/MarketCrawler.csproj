@@ -77,9 +77,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\AccessMarkets.cs" />
+    <Compile Include="Model\IInstrumentContext.cs" />
     <Compile Include="Model\AccessFiles.cs" />
     <Compile Include="Model\AccessXIgnite.cs" />
-    <Compile Include="Model\IgniteInstrument.cs" />
     <Compile Include="Model\Instrument.cs" />
     <Compile Include="Model\Sproc.cs" />
     <Compile Include="Program.cs" />
