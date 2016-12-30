@@ -14,7 +14,9 @@ using System.Configuration;
 using Xignite.Sdk.Api;
 using Xignite.Sdk.Api.Models.XigniteGlobalQuotes;
 
-
+/// <summary>
+///  NOY 2
+/// </summary>
 namespace MarketCrawler
 {
     class MyInstrumentContext
