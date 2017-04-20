@@ -11,6 +11,13 @@ namespace MarketCrawler
     {
         private static readonly string XigniteKey = "270AE78B8C9349E8912DB09AD5DD1E80";
 
+        public static GlobalQuote getXigniteData(string isin)
+        {
+            var bond = new XigniteGlobalQuotes(XigniteKey);
+            GlobalQuote data = bond.GetGlobalDelayedQuote(isin, IdentifierTypes.ISIN);
+            return data;
+
+        }
         public static GlobalQuote  getXigniteData(string exchgangeName, string tickerName)
         {
             var historical = new XigniteGlobalHistorical(XigniteKey);
@@ -21,12 +28,15 @@ namespace MarketCrawler
             string symbol;
             var a = historical.ListExchanges().ExchangesDescriptions;
             int i = 0;
-            foreach (var b in a)
+ /*           foreach (var b in a)
             {
                 Console.WriteLine(b.Market+i+" "+b.MarketIdentificationCode);
                 i++;
             }
-            if (exchgangeName != "XNAS")
+            
+    */
+    
+    if (exchgangeName != "XNAS")
             {
                 symbol = String.Format("{0}.{1}", tickerName, exchgangeName);
             }

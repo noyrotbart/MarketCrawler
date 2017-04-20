@@ -9,6 +9,7 @@ namespace MarketCrawler
     [Serializable]
     public sealed class StockName
     {
+        public static readonly StockName HongKong = new StockName("HongKong");
         public static readonly StockName NasdaqEurope = new StockName("NasdaqEurope");
         public static readonly StockName EURONEXT = new StockName("EURONEXT");
         public static readonly StockName Nasdaq = new StockName("Nasdaq");
@@ -34,4 +35,25 @@ namespace MarketCrawler
             stockExchange = istock;
         }
     }
+
+
+    [Serializable]
+    public class StockInput
+    {
+        public string stockMarket { get; set; }
+        public string isin;
+        public string ticker;
+        public string mic;
+        public Boolean found;
+        public Boolean foundwithisin;
+        public StockInput(string isin, string ticker, string mic)
+        {
+            this.isin = isin;
+            this.ticker = ticker;
+            this.mic = mic;
+            this.found = false;
+            this.foundwithisin = false;
+        }
+    }
+
 }
