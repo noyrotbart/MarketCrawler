@@ -96,7 +96,7 @@ namespace MarketCrawler
             }
 
             Console.WriteLine(this.ticker + " at time (UTC) " + DateTime.Now.ToUniversalTime().ToLongTimeString());
-            if (this.stockExchangeName == StockName.London) Console.Write("\n Last Trade: Time x=" + input.Time+" c="+this.lastTradeTime+" Price of last trade in c="+this.lastTradePrice);
+            if (this.stockExchangeName == StockName.London) Console.Write("\n Last Trade: Time x=" + input.Time+" Price of last trade in c= "+this.lastTradePrice+" ");
             if (different == true)
             {
                 val.different = true;

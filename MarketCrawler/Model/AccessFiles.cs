@@ -13,6 +13,23 @@ namespace MarketCrawler
      class AccessFiles
     {
         static string filename = Program.root + "ListInterpreted.txt";
+        static string StocksInput = Program.root + "FoundWithISIN.csv";
+
+        public static List<StockInput> getStockInput()
+        {
+            List<StockInput> mystocks = new List<StockInput>();
+            System.IO.StreamReader file = new System.IO.StreamReader( StocksInput);
+            string line;
+            while ((line = file.ReadLine()) != null)
+            {
+                String[] lineSplit = line.Split(',');
+                mystocks.Add(new StockInput(lineSplit[0], lineSplit[1], lineSplit[2]));
+
+            }
+            return mystocks;
+
+
+        }
         public static List<Target> getList(StockName stockExchng)
         {
             using (Stream stream = File.Open(filename, FileMode.Open))

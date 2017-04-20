@@ -66,6 +66,7 @@ namespace MarketCrawler
         public static string root = @"C:\Users\nr\Desktop\MarketCrawler\MarketCrawler\";
         static void Main(string[] args)
         {
+            CheckStocks();
             // This codeblock instantiate our little stock DB from te textlists in the folder
             //AccessFiles.ReadLondonData();
             //AccessFiles.ReadData("NasdaqNordic.txt", StockName.NasdaqEurope);
@@ -74,8 +75,9 @@ namespace MarketCrawler
 
             while (true)
             {
-               // AccessEnglishWeb();
-                AccessEuroNext();
+               // AccessHongKong();
+                AccessEnglishWeb();
+               // AccessEuroNext();
                 //AccessNasdaqEurope();
                //  AccessNasdaq();
                 // wait five minutes
@@ -110,7 +112,120 @@ namespace MarketCrawler
 
         }
 
-       
+
+        public static string RemoveExtraText(string value)
+        {
+            var allowedChars = "01234567890.,";
+            return new string(value.Where(c => allowedChars.Contains(c)).ToArray());
+        }
+
+
+        public static  void CheckStocks()
+
+        {
+            List<StockInput> data = AccessFiles.getStockInput();
+            foreach (StockInput company in data)
+            {
+                 
+                GlobalQuote mytempQuery = AccessXIgnite.getXigniteData(company.mic, company.ticker);
+                if (mytempQuery == null)
+                {
+                    Console.WriteLine("{0},{1} not working, trying isin", company.mic, company.ticker);
+                     mytempQuery = AccessXIgnite.getXigniteData(company.isin);
+                    if (mytempQuery.Outcome != "Success")
+                    {
+                        Console.WriteLine("No isin");
+                        company.foundwithisin = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("{0},{1} working with isin on {2}", company.mic, company.ticker,mytempQuery.Security.Market);
+                        company.stockMarket = mytempQuery.Security.Market;
+                        company.foundwithisin = true;
+                    }
+
+                }
+
+                else
+                {
+                    Console.WriteLine("{0},{1} working", company.mic, company.ticker);
+                    company.found = true;
+                }
+            }
+            Console.Clear();
+            foreach (StockInput company in data)
+            {
+                if (company.found == true) Console.WriteLine("{0},{1}", company.mic, company.ticker);
+            }
+
+            Console.WriteLine("Found with ISIN");
+            foreach (StockInput company in data)
+            {
+                if (company.found == false && company.foundwithisin == true) Console.WriteLine("{0},{1},{2},{3}",company.isin, company.ticker,company.mic,company.stockMarket);
+            }
+
+            Console.WriteLine("Not found");
+            foreach (StockInput company in data)
+            {
+                if (company.found == false && company.foundwithisin == false) Console.WriteLine("{0},{1},{2}", company.isin, company.ticker, company.mic);
+            }
+
+        }
+
+
+        static void AccessHongKong()
+        {
+            //some psuedo random sample of stocks
+            string[] stockList = new string[] { "8091", "136", "771", "299", "8358", "1656", "3639", "21", "8316", "1663", "2927", "1637", "646", "8327", "1231", "8195", "8256", "8416", "362", "1462" };
+                foreach (string stock in stockList)
+                {
+                    string Url = @"https://www.hkex.com.hk/eng/invest/company/quote_page_e.asp?WidCoID="+stock+@"&WidCoAbbName=&Month=1&langcode=e";
+
+                    using (WebClient client = new WebClient())
+                    {
+                        client.Headers["User-Agent"] =
+                                   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36";
+                        client.UseDefaultCredentials = true;
+                        HtmlDocument htmlDoc = new HtmlDocument();
+                        htmlDoc.LoadHtml(client.DownloadString(Url));
+                         Instrument myInstrument = new Instrument();
+                    {
+                        myInstrument.stockExchangeName = StockName.HongKong;
+                        
+                        var a = htmlDoc.DocumentNode.SelectNodes("//td[@bgcolor='#CCCCCC']");
+                        HtmlNode[] map = new HtmlNode[a.Count];
+                        a.CopyTo(map, 0);
+                        myInstrument.pctChange = 0;
+                        if (map[1].InnerHtml.Contains("down"))
+                            {
+                            myInstrument.Change("-" + map[1].InnerText);
+                            myInstrument.PctChange("-" + map[2].InnerText);
+                        }
+                        else
+                        {
+                            myInstrument.Change( map[1].InnerText);
+                            myInstrument.PctChange( map[2].InnerText);
+                        }
+                        myInstrument.LastPrice(map[0].InnerText);
+                        myInstrument.Bid(map[3].InnerText);
+                        myInstrument.Ask(map[4].InnerText);
+                        myInstrument.DayHigh(map[6].InnerText);
+                        myInstrument.DayLow(map[7].InnerText);
+                        myInstrument.ticker = stock;
+                        myInstrument.PrevClose(RemoveExtraText(map[8].InnerText));
+                        myInstrument.Volume(map[11].InnerText);
+                        myInstrument.timestamp = System.DateTime.Now;
+
+                    }
+                    GlobalQuote mytempQuery = AccessXIgnite.getXigniteData("XHGK", myInstrument.ticker);
+                    var serializedParent = JsonConvert.SerializeObject(mytempQuery);
+                    GlobalQuoteExtend query = JsonConvert.DeserializeObject<GlobalQuoteExtend>(serializedParent);
+                    var differences = myInstrument.compareInstrument(query);
+
+
+                }
+            }
+        }
         static void AccessNasdaqEurope()
         {
             List<Target> stockList = AccessFiles.getList(StockName.NasdaqEurope);
